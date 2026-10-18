@@ -1,0 +1,35 @@
+name: Auto-Apply Airtight Security Ruleset
+
+on:
+  repository:
+    types: [created]
+
+jobs:
+  apply-ruleset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply Branch Ruleset via GitHub API
+        env:
+          GH_TOKEN: ${{ secrets.CUSTOM_PAT_TOKEN }}
+          REPO: ${{ github.event.repository.full_name }}
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/$REPO/rulesets \
+            -d '{
+              "name": "Airtight Security Policy",
+              "target": "branch",
+              "enforcement": "active",
+              "conditions": {
+                "ref_name": {
+                  "include": ["~DEFAULT_BRANCH"],
+                  "exclude": []
+                }
+              },
+              "rules": [
+                { "type": "required_signatures" },
+                { "type": "non_fast_forward" },
+                { "type": "deletion" }
+              ]
+            }'
